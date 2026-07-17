@@ -2,11 +2,13 @@
   "name": "langchain_javascript",
   "version": "1.0.0",
   "description": "本仓库用于记录 LangChain.js 的学习过程与实践项目。",
-  "main": "index.js",
+  "main": "src/index.js",
   "directories": {
     "example": "examples"
   },
   "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -16,12 +18,26 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/xue1992115/langchain_javascript/issues"
   },
   "homepage": "https://github.com/xue1992115/langchain_javascript#readme",
   "dependencies": {
-    "langchain": "^1.5.3"
+    "@langchain/anthropic": "^1.5.1",
+    "@langchain/core": "^1.2.3",
+    "@langchain/deepseek": "^1.1.5",
+    "@langchain/openai": "^1.5.5",
+    "@langchain/openrouter": "^0.4.5",
+    "cors": "^2.8.5",
+    "deepagents": "^1.11.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.0",
+    "langchain": "^1.5.3",
+    "morgan": "^1.10.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }

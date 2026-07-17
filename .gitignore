@@ -30,3 +30,5 @@ components.d.ts
 *.sw?
 pnpm-lock.yaml
 /pnpm-lock.yaml
+#  Local env files
+.env
