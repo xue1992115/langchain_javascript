@@ -1,0 +1,27 @@
+{
+  "name": "langchain_javascript",
+  "version": "1.0.0",
+  "description": "本仓库用于记录 LangChain.js 的学习过程与实践项目。",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xue1992115/langchain_javascript.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/xue1992115/langchain_javascript/issues"
+  },
+  "homepage": "https://github.com/xue1992115/langchain_javascript#readme",
+  "dependencies": {
+    "langchain": "^1.5.3"
+  }
+}
