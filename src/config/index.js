@@ -1,3 +1,9 @@
+/*
+ * @Author: hxx
+ * @Date: 2026-07-20 16:03:32
+ * @LastEditors: hxx
+ * @LastEditTime: 2026-07-20 16:23:00
+ */
 import "dotenv/config";
 
 /**
@@ -18,5 +24,31 @@ export const config = {
       apiKey: process.env.OPENAI_API_KEY,
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
     },
+    minimax: {
+      apiKey: process.env.MINIMAX_API_KEY,
+      baseUrl: process.env.MINIMAX_API_BASE_URL || "https://api.minimax.chat/v1",
+      model: process.env.MINIMAX_MODEL,
+    },
+  },
+
+  // 嵌入模型配置（用于 RAG 向量化）
+  embeddings: {
+    provider: process.env.EMBEDDING_PROVIDER || "minimax",
+    minimax: {
+      apiKey: process.env.MINIMAX_API_KEY,
+      baseUrl: process.env.MINIMAX_API_BASE_URL || "http://10.1.111.154:3001/v1",
+      model: process.env.EMBEDDING_MODEL || "text-embedding-ada-002",
+    },
+    openai: {
+      apiKey: process.env.OPENAI_API_KEY,
+      model: process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-ada-002",
+    },
+  },
+
+  // RAG 配置
+  rag: {
+    chunkSize: parseInt(process.env.RAG_CHUNK_SIZE, 10) || 500,
+    chunkOverlap: parseInt(process.env.RAG_CHUNK_OVERLAP, 10) || 50,
+    topK: parseInt(process.env.RAG_TOP_K, 10) || 4,
   },
 };

@@ -1,23 +1,14 @@
+/*
+ * @Author: hxx
+ * @Date: 2026-07-17 16:14:11
+ * @LastEditors: hxx
+ * @LastEditTime: 2026-07-20 16:37:57
+ */
 import { ChatOpenAI } from "@langchain/openai";
 import { createAgent, tool } from "langchain";
 import { z } from "zod";
 import { config } from "../config/index.js";
-
-/**
- * 创建 DeepSeek LLM 实例（供 Agent 使用）
- */
-function createAgentLLM() {
-  return new ChatOpenAI(
-    {
-      model: config.llm.deepseek.model,
-      temperature: 0.7,
-    },
-    {
-      baseURL: config.llm.deepseek.baseUrl,
-      apiKey: config.llm.deepseek.apiKey,
-    }
-  );
-}
+import { getLLM } from "./llm.service.js"
 
 /**
  * 天气查询工具
@@ -43,7 +34,7 @@ const getWeather = tool(
  * @returns {Promise<{ content: string; steps?: unknown[] }>}
  */
 export async function invokeAgent(query) {
-  const llm = createAgentLLM();
+  const llm = await getLLM();
 
   const agent = await createAgent({
     model: llm,
