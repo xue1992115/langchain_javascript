@@ -12,6 +12,7 @@ import {
   ragQueryController,
   rebuildController,
   statusController,
+  ragChatStreamController,
 } from "../controllers/rag.controller.js";
 
 const router = Router();
@@ -29,6 +30,9 @@ router.post("/rag/agent", ragAgentController);
 
 // 直接 RAG 问答：知识检索 + 生成回答
 router.post("/rag/query", ragQueryController);
+
+// 流式 RAG 问答（SSE）：实时展示检索进度和 LLM 生成
+router.post("/rag/chat/stream", ragChatStreamController);
 
 // 重建知识库向量索引
 router.post("/rag/rebuild", rebuildController);

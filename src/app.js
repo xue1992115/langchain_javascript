@@ -13,7 +13,11 @@ import { requestLogger } from "./middleware/logger.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 // 导入项目总路由聚合模块
 import routes from "./routes/index.js";
+// 导入路径处理（用于静态文件）
+import { fileURLToPath } from "url";
+import { join, dirname } from "path";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 // ---- 中间件 ----
@@ -21,6 +25,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+// ---- 静态文件托管（聊天前端） ----
+app.use(express.static(join(__dirname, "..", "public")));
 
 // ---- 路由 ----
 app.use("/api", routes);

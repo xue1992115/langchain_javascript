@@ -14,6 +14,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { Document } from "@langchain/core/documents";
+import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 import { config } from "../config/index.js";
 import { getKnowledgeDocuments } from "./knowledge-base.js";
 
@@ -370,7 +371,7 @@ export async function buildVectorStore(force = false) {
     try {
       const { loadAllDocuments } = await import("./knowledge-loader.js");
       rawDocs = await loadAllDocuments();
-      console.log(rawDocs, 'rawDocs')
+      // rawDocs debugging log removed
     } catch {
       rawDocs = getKnowledgeDocuments();
     }
@@ -532,10 +533,107 @@ export async function getRAGStatus() {
   };
 }
 
+// ======================== SSE 流式 RAG ========================
+
+/**
+ * 流式 RAG 问答（回调模式）
+ *
+ * 逐步调用 onEvent 回调，让前端实时展示检索进度和 LLM 生成内容。
+ *   type: "status"  — 进度提示
+ *   type: "sources" — 知识来源列表
+ *   type: "token"   — LLM 逐 token 输出
+ *   type: "done"    — 完成信号
+ *   type: "error"   — 错误信号
+ *
+ * @param {Array<{role: string, content: string}>} messages - 对话历史
+ * @param {(event: {type: string, data: any}) => void} onEvent - 事件回调
+ */
+export async function streamRAGChat(messages, onEvent) {
+  // 1. 获取最后一条用户消息
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+  if (!lastUserMsg) {
+    onEvent({ type: "error", data: { message: "缺少用户消息" } });
+    return;
+  }
+  const query = lastUserMsg.content;
+
+  // 2. 进度：通知前端正在检索
+  onEvent({ type: "status", data: { message: "🔍 正在检索知识库..." } });
+
+  let relevantDocs, context, sources;
+  try {
+    const vectorStore = await getVectorStore();
+    const retriever = vectorStore.asRetriever(config.rag.topK);
+    relevantDocs = await retriever.invoke(query);
+    context = relevantDocs.map((d) => d.pageContent).join("\n\n---\n\n");
+    sources = [...new Set(relevantDocs.map((d) => d.metadata?.title).filter(Boolean))];
+  } catch (err) {
+    onEvent({ type: "status", data: { message: "⚠️ 检索失败，将仅使用模型自身知识" } });
+    context = "";
+    sources = [];
+  }
+
+  // 3. 推送来源信息
+  onEvent({ type: "sources", data: sources });
+  onEvent({ type: "status", data: { message: "🤖 正在生成回答..." } });
+
+  // 4. 构建 LLM 消息
+  const llm = new ChatOpenAI({
+    model: config.llm.deepseek.model,
+    temperature: 0.3,
+    apiKey: config.llm.deepseek.apiKey,
+    configuration: {
+      baseURL: config.llm.deepseek.baseUrl,
+    },
+  });
+
+  const systemContent = context
+    ? `你是一位专业、全面的低空经济领域专家助手。请你基于以下提供的参考资料，回答用户的问题。
+
+回答要求：
+1. 主要基于提供的参考资料进行回答，确保准确性和专业性
+2. 如果参考资料不足以回答问题，可以结合你自己的知识进行补充，但要说明哪些是参考资料以外的内容
+3. 回答要结构化、条理清晰，适当使用标题和列表
+4. 引用参考资料时，可以提及对应的类别或主题
+5. 对于数据、法规、政策等内容，尽量给出具体的数字和时间
+
+参考资料：
+${context}`
+    : `你是一位专业、全面的低空经济领域专家助手。请你回答用户的问题。
+
+回答要求：
+1. 回答要结构化、条理清晰，适当使用标题和列表
+2. 如果问题涉及数据、法规、政策等内容，请注明可能不是最新信息`;
+
+  const conversationMessages = [
+    new SystemMessage(systemContent),
+    ...messages.map((m) =>
+      m.role === "user" ? new HumanMessage(m.content) : new AIMessage(m.content)
+    ),
+  ];
+
+  // 5. 流式输出
+  try {
+    const stream = await llm.stream(conversationMessages);
+    for await (const chunk of stream) {
+      const token = chunk.content;
+      if (token) {
+        onEvent({ type: "token", data: { token } });
+      }
+    }
+  } catch (err) {
+    onEvent({ type: "error", data: { message: `LLM 调用失败: ${err.message}` } });
+    return;
+  }
+
+  onEvent({ type: "done", data: {} });
+}
+
 export default {
   buildVectorStore,
   getVectorStore,
   createRAGChain,
   queryLowAltitudeKnowledge,
   getRAGStatus,
+  streamRAGChat,
 };
