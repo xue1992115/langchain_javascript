@@ -82,8 +82,39 @@ async function parsePDFWithLib(filePath) {
 }
 
 /**
+ * 使用 macOS PDFKit（Swift）提取 PDF 文本
+ * PDFKit 能处理 textutil 无法解析的中文 PDF（CID编码字体）
+ */
+function parsePDFWithSwift(filePath) {
+  try {
+    const scriptPath = join(__dirname, "pdf-extract.swift");
+    const stdout = execSync(
+      `swift "${scriptPath}" "${filePath}" 2>/dev/null`,
+      { encoding: "utf-8", timeout: 30000 }
+    );
+
+    const text = (stdout || "").trim();
+    if (!text || text.startsWith("ERROR:")) return null;
+
+    const pages = text
+      .split(/\n{3,}/)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 20);
+
+    return {
+      fullText: text,
+      pages: pages.length > 0 ? pages : [text],
+      pageCount: Math.max(pages.length, 1),
+      metadata: {},
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 解析 PDF 文件提取文本
- * 依次尝试：pdf-parse 库 → macOS textutil 命令
+ * 依次尝试：pdf-parse 库 → macOS textutil → Swift PDFKit
  */
 async function parsePDF(filePath) {
   // 1) 优先尝试 pdf-parse 库（语义更好）
@@ -95,6 +126,13 @@ async function parsePDF(filePath) {
   if (cmdResult) {
     console.log("[知识加载器] 📎 使用 textutil 解析 PDF");
     return cmdResult;
+  }
+
+  // 3) 最后尝试 macOS PDFKit（Swift），能处理 CID 编码的中文 PDF
+  const swiftResult = parsePDFWithSwift(filePath);
+  if (swiftResult) {
+    console.log("[知识加载器] 🍎 使用 Swift/PDFKit 解析 PDF");
+    return swiftResult;
   }
 
   console.warn(`[知识加载器] ⚠️ 无法解析 PDF: ${filePath}`);

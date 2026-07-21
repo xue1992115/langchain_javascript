@@ -99,7 +99,10 @@ async function getOrCreateLLM(provider = "deepseek") {
   }
   return _llmInstance;
 }
-
+/**
+ * 定义输出结果
+ */
+const Answer = z.object({ summary: z.string(), confidence: z.number() });
 /**
  * 获取（或创建）Agent 单例
  * createAgent 内部构建 LangGraph 状态图，复用可大幅降低每次请求的延迟。
@@ -122,7 +125,7 @@ async function getOrCreateAgent(provider = "deepseek") {
     const llm = await getOrCreateLLM(provider);
     _agentInstance = await createAgent({
       model: llm,
-      tools,
+      tools
     });
     console.log(`[RAG Agent] 🤖 Agent 已初始化（${provider}）`);
   }

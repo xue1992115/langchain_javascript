@@ -370,6 +370,7 @@ export async function buildVectorStore(force = false) {
     try {
       const { loadAllDocuments } = await import("./knowledge-loader.js");
       rawDocs = await loadAllDocuments();
+      console.log(rawDocs, 'rawDocs')
     } catch {
       rawDocs = getKnowledgeDocuments();
     }
