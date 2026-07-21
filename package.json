@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
+    "kill": "lsof -ti:3000 | xargs kill -9 2>/dev/null; echo '✅ 端口 3000 已释放' || echo 'ℹ️ 端口 3000 未被占用'",
+    "dev:kill": "npm run kill && npm run dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

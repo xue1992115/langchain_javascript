@@ -78,30 +78,92 @@ const ragStatusTool = tool(
 // 所有工具列表
 const tools = [lowAltitudeQATool, regulationTool, ragStatusTool];
 
-// ======================== Agent 创建与执行 ========================
+// ======================== 单例缓存（支持 provider 切换） ========================
+
+/** @type {import("langchain").ReactAgent | null} */
+let _agentInstance = null;
+
+/** @type {import("langchain").BaseChatModel | null} */
+let _llmInstance = null;
+
+/** @type {string | null} */
+let _cachedProvider = null;
 
 /**
- * 执行 RAG Agent 任务
- * 使用 createAgent 自动绑定工具，Agent 自主判断工具调用
+ * 获取（或创建）LLM 单例
+ * @param {'deepseek' | 'minimax'} provider
  */
-export async function invokeRAGAgent(query) {
-  try {
-    const llm = await getLLM();
+async function getOrCreateLLM(provider = "deepseek") {
+  if (!_llmInstance || _cachedProvider !== provider) {
+    _llmInstance = await getLLM(provider);
+  }
+  return _llmInstance;
+}
 
-    // 使用 createAgent 创建智能体，自动绑定工具
-    const agent = await createAgent({
+/**
+ * 获取（或创建）Agent 单例
+ * createAgent 内部构建 LangGraph 状态图，复用可大幅降低每次请求的延迟。
+ *
+ * ⚠️ 如果 provider 切换了，会自动丢弃旧缓存并重建 LLM + Agent
+ * @param {'deepseek' | 'minimax'} provider
+ */
+async function getOrCreateAgent(provider = "deepseek") {
+  const providerChanged = _cachedProvider !== null && _cachedProvider !== provider;
+
+  if (providerChanged) {
+    // 切换 provider → 丢弃旧缓存，下次重建
+    _agentInstance = null;
+    _llmInstance = null;
+    console.log(`[RAG Agent] 🔄 provider 切换: ${_cachedProvider} → ${provider}`);
+  }
+
+  if (!_agentInstance) {
+    _cachedProvider = provider;
+    const llm = await getOrCreateLLM(provider);
+    _agentInstance = await createAgent({
       model: llm,
       tools,
     });
+    console.log(`[RAG Agent] 🤖 Agent 已初始化（${provider}）`);
+  }
+  return _agentInstance;
+}
 
-    const response = await agent.invoke({ input: query });
+// ======================== Agent 执行 ========================
+
+/**
+ * 执行 RAG Agent 任务
+ * 使用缓存的 Agent 单例执行，避免每次请求重复构建 LangGraph 状态图。
+ *
+ * @param {string} query - 用户问题
+ * @param {'deepseek' | 'minimax'} [provider='deepseek'] - 模型提供商，切换后自动重建 Agent
+ */
+export async function invokeRAGAgent(query, provider = "deepseek") {
+  try {
+    const agent = await getOrCreateAgent(provider);
+
+    // 注意：createAgent 期望 messages 格式，而非 { input }
+    const response = await agent.invoke({
+      messages: [{ role: "human", content: query }],
+    });
+
+    // ReactAgent 返回完整的 state，从中提取最终 AI 消息
+    const messages = response.messages || [];
+    const lastAiMessage = [...messages]
+      .reverse()
+      .find(
+        (m) =>
+          m._getType?.() === "ai" || m.type === "ai" || m.role === "assistant"
+      );
 
     return {
-      content: response.output || response.text || JSON.stringify(response),
-      steps: response.intermediateSteps || [],
+      content: lastAiMessage?.content || response?.structuredResponse || "",
+      steps: response.intermediateSteps || response.steps || [],
     };
   } catch (error) {
-    console.error("[RAG Agent] 调用失败:", error.message);
+    console.error("[RAG Agent] 调用失败:", error.message, error.stack);
+    // 重新抛出错误，让 controller 的错误处理中间件返回正确的错误响应
+    throw error;
   }
 }
 
