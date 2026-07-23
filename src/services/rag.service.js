@@ -579,11 +579,11 @@ export async function streamRAGChat(messages, onEvent) {
 
   // 4. 构建 LLM 消息
   const llm = new ChatOpenAI({
-    model: config.llm.deepseek.model,
+    model: config.llm.minimax.model,
     temperature: 0.3,
-    apiKey: config.llm.deepseek.apiKey,
+    apiKey: config.llm.minimax.apiKey,
     configuration: {
-      baseURL: config.llm.deepseek.baseUrl,
+      baseURL: config.llm.minimax.baseUrl,
     },
   });
 

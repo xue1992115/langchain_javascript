@@ -2,7 +2,7 @@
  * @Author: hxx
  * @Date: 2026-07-20 16:03:32
  * @LastEditors: hxx
- * @LastEditTime: 2026-07-20 16:23:00
+ * @LastEditTime: 2026-07-23 13:28:56
  */
 import "dotenv/config";
 
@@ -27,7 +27,7 @@ export const config = {
     minimax: {
       apiKey: process.env.MINIMAX_API_KEY,
       baseUrl: process.env.MINIMAX_API_BASE_URL || "https://api.minimax.chat/v1",
-      model: process.env.MINIMAX_MODEL,
+      model: process.env.MINIMAX_MODEL || "MiniMax-M2.7",
     },
   },
 
