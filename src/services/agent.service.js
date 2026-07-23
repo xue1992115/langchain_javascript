@@ -8,7 +8,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { createAgent, tool } from "langchain";
 import { z } from "zod";
 import { config } from "../config/index.js";
-import { getLLM } from "./llm.service.js"
+import { getLLM } from "./llm-service.js"
 
 /**
  * 天气查询工具

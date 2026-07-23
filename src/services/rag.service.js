@@ -10,12 +10,12 @@
  * PDF 文档加载通过 knowledge-loader.js 实现，放入 src/knowledge/ 目录即可。
  */
 
-import { ChatOpenAI } from "@langchain/openai";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { Document } from "@langchain/core/documents";
 import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 import { config } from "../config/index.js";
+import { getLLM } from "./llm-service.js";
 import { getKnowledgeDocuments } from "./knowledge-base.js";
 
 // ======================== 单例 ========================
@@ -430,14 +430,7 @@ export async function createRAGChain() {
   const vectorStore = await getVectorStore();
   const retriever = vectorStore.asRetriever(config.rag.topK);
 
-  const llm = new ChatOpenAI({
-    model: config.llm.deepseek.model,
-    temperature: 0.3,
-    apiKey: config.llm.deepseek.apiKey,
-    configuration: {
-      baseURL: config.llm.deepseek.baseUrl,
-    },
-  });
+  const llm = await getLLM("deepseek", { temperature: 0.3 });
 
   const prompt = ChatPromptTemplate.fromMessages([
     [
@@ -578,14 +571,7 @@ export async function streamRAGChat(messages, onEvent) {
   onEvent({ type: "status", data: { message: "🤖 正在生成回答..." } });
 
   // 4. 构建 LLM 消息
-  const llm = new ChatOpenAI({
-    model: config.llm.minimax.model,
-    temperature: 0.3,
-    apiKey: config.llm.minimax.apiKey,
-    configuration: {
-      baseURL: config.llm.minimax.baseUrl,
-    },
-  });
+  const llm = await getLLM("minimax", { temperature: 0.3 });
 
   const systemContent = context
     ? `你是一位专业、全面的低空经济领域专家助手。请你基于以下提供的参考资料，回答用户的问题。

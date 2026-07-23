@@ -2,7 +2,7 @@
  * @Author: hxx
  * @Date: 2026-07-20 16:03:32
  * @LastEditors: hxx
- * @LastEditTime: 2026-07-23 13:28:56
+ * @LastEditTime: 2026-07-23 14:01:33
  */
 import "dotenv/config";
 
@@ -13,16 +13,15 @@ export const config = {
   port: parseInt(process.env.PORT, 10) || 3000,
   env: process.env.NODE_ENV || "development",
 
+  /** 默认 LLM 提供商（deepseek | minimax） */
+  defaultProvider: process.env.DEFAULT_PROVIDER || "deepseek",
+
   // 大模型配置
   llm: {
     deepseek: {
       apiKey: process.env.DEEPSEEK_API_KEY,
       baseUrl: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
       model: process.env.DEEPSEEK_MODEL || "deepseek-v4-flash",
-    },
-    openai: {
-      apiKey: process.env.OPENAI_API_KEY,
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
     },
     minimax: {
       apiKey: process.env.MINIMAX_API_KEY,

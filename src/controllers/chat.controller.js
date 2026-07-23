@@ -4,7 +4,7 @@
  * @LastEditors: hxx
  * @LastEditTime: 2026-07-20 15:52:36
  */
-import { chat } from "../services/llm.service.js";
+import { chat } from "../services/llm-service.js";
 import { createError } from "../middleware/error.middleware.js";
 
 /**

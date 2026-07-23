@@ -7,7 +7,7 @@
 
 import { createAgent, tool } from "langchain";
 import { z } from "zod";
-import { getLLM } from "./llm.service.js";
+import { getLLM } from "./llm-service.js";
 import { queryLowAltitudeKnowledge, getRAGStatus } from "./rag.service.js";
 
 // ======================== 工具定义 ========================
