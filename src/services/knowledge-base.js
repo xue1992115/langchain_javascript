@@ -338,20 +338,4 @@ export function getKnowledgeDocuments() {
   }));
 }
 
-/**
- * 按类别获取文档
- */
-export function getDocumentsByCategory(category) {
-  return LOW_ALTITUDE_KNOWLEDGE
-    .filter((doc) => doc.category === category)
-    .map((doc) => ({
-      pageContent: doc.content,
-      metadata: {
-        id: doc.id,
-        title: doc.title,
-        category: doc.category,
-      },
-    }));
-}
-
 export default LOW_ALTITUDE_KNOWLEDGE;

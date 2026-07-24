@@ -58,31 +58,6 @@ export async function getLLM(provider, extraOptions = {}) {
   return modelCache.get(cacheKey);
 }
 
-/**
- * 切换 provider：清除旧缓存，创建新实例
- * @param {string} provider - 目标提供商
- */
-export function switchProvider(provider) {
-  const p = (provider || config.defaultProvider).toLowerCase();
-  if (!isSupportedProvider(p)) {
-    throw new Error(`不支持的 LLM 提供商: ${p}（可选: deepseek, minimax）`);
-  }
-  modelCache.clear();
-  console.log(`[LLM] 🔄 切换模型提供商: ${p}`);
-}
-
-/**
- * 发送聊天消息，返回回复内容（便捷方法）
- * @param {string} message - 用户消息
- * @param {string} [provider] - 模型提供商
- * @returns {Promise<string>}
- */
-export async function chat(message, provider) {
-  const llm = await getLLM(provider);
-  const response = await llm.invoke(message);
-  return response.content;
-}
-
 // ---- 内部辅助函数 ----
 
 /**
@@ -91,5 +66,3 @@ export async function chat(message, provider) {
 function isSupportedProvider(provider) {
   return provider === "deepseek" || provider === "minimax";
 }
-
-export { createChatModel };

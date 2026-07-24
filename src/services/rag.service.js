@@ -11,7 +11,6 @@
  */
 
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { Document } from "@langchain/core/documents";
 import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 import { config } from "../config/index.js";
@@ -20,7 +19,6 @@ import { getKnowledgeDocuments } from "./knowledge-base.js";
 
 // ======================== 单例 ========================
 let _vectorStore = null;
-let _retrievalChain = null;
 
 /** @type {Promise<void> | null} 构建中的锁，防止并发重复构建 */
 let _buildingLock = null;
@@ -417,99 +415,7 @@ export async function getVectorStore() {
   return _vectorStore;
 }
 
-// ======================== 检索问答链 ========================
-
-/**
- * 创建 RAG 检索问答链
- */
-export async function createRAGChain() {
-  if (_retrievalChain) {
-    return _retrievalChain;
-  }
-
-  const vectorStore = await getVectorStore();
-  const retriever = vectorStore.asRetriever(config.rag.topK);
-
-  const llm = await getLLM("deepseek", { temperature: 0.3 });
-
-  const prompt = ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      `你是一位专业、全面的低空经济领域专家助手。请你基于以下提供的参考资料，回答用户关于低空经济的问题。
-
-回答要求：
-1. 主要基于提供的参考资料进行回答，确保准确性和专业性
-2. 如果参考资料不足以回答问题，可以结合你自己的知识进行补充，但要说明哪些是参考资料以外的内容
-3. 回答要结构化、条理清晰，适当使用标题和列表
-4. 引用参考资料时，可以提及对应的类别或主题
-5. 对于数据、法规、政策等内容，尽量给出具体的数字和时间
-
-参考资料：
-{context}`,
-    ],
-    ["human", "{input}"],
-  ]);
-
-  _retrievalChain = async (query) => {
-    const relevantDocs = await retriever.invoke(query);
-    const context = relevantDocs
-      .map((d) => d.pageContent)
-      .join("\n\n---\n\n");
-
-    const formattedPrompt = await prompt.formatMessages({
-      context,
-      input: query,
-    });
-
-    const response = await llm.invoke(formattedPrompt);
-
-    return {
-      answer: response.content,
-      context: relevantDocs,
-    };
-  };
-
-  console.log("[RAG] 🔗 检索链创建完成");
-
-  return _retrievalChain;
-}
-
-// ======================== 问答接口 ========================
-
-/**
- * 查询低空经济知识（RAG 检索增强生成）
- */
-export async function queryLowAltitudeKnowledge(query) {
-  try {
-    const chain = await createRAGChain();
-    const result = await chain(query);
-
-    const sources = (result.context || [])
-      .filter((doc) => doc.metadata && doc.metadata.title)
-      .map((doc) => ({
-        title: doc.metadata.title,
-        category: doc.metadata.category,
-      }));
-
-    const uniqueSources = [];
-    const seen = new Set();
-    for (const source of sources) {
-      const key = `${source.title}|${source.category}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        uniqueSources.push(source);
-      }
-    }
-
-    return {
-      answer: result.answer,
-      sources: uniqueSources,
-    };
-  } catch (error) {
-    console.error("[RAG] ❌ 查询失败:", error.message);
-    throw error;
-  }
-}
+// ======================== 系统状态 ========================
 
 /**
  * 获取 RAG 系统状态
@@ -558,6 +464,7 @@ export async function streamRAGChat(messages, onEvent) {
     const vectorStore = await getVectorStore();
     const retriever = vectorStore.asRetriever(config.rag.topK);
     relevantDocs = await retriever.invoke(query);
+    console.log(relevantDocs, 'relevantDocsrelevantDocsrelevantDocs')
     context = relevantDocs.map((d) => d.pageContent).join("\n\n---\n\n");
     sources = [...new Set(relevantDocs.map((d) => d.metadata?.title).filter(Boolean))];
   } catch (err) {
@@ -565,6 +472,7 @@ export async function streamRAGChat(messages, onEvent) {
     context = "";
     sources = [];
   }
+  console.log(context, 'asdlfalsdkfl')
 
   // 3. 推送来源信息
   onEvent({ type: "sources", data: sources });
@@ -614,12 +522,3 @@ ${context}`
 
   onEvent({ type: "done", data: {} });
 }
-
-export default {
-  buildVectorStore,
-  getVectorStore,
-  createRAGChain,
-  queryLowAltitudeKnowledge,
-  getRAGStatus,
-  streamRAGChat,
-};

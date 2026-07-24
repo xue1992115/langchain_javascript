@@ -265,19 +265,6 @@ export async function loadAllDocuments(options = {}) {
   return allDocs;
 }
 
-/**
- * 获取已注册的外部文件列表（不加载内容）
- */
-export function listExternalFiles() {
-  return getExternalFiles().map((f) => ({
-    name: f.name,
-    ext: f.ext,
-    size: f.size,
-    sizeKB: Math.round(f.size / 1024),
-  }));
-}
-
 export default {
   loadAllDocuments,
-  listExternalFiles,
 };
